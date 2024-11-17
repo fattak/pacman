@@ -88,6 +88,69 @@ var quiz = (function() {
         `;
         modal.appendChild(question);
 
+        // Add timer container
+        const timerContainer = document.createElement('div');
+        timerContainer.style.cssText = `
+            margin-bottom: ${mobile ? '30px' : '20px'};
+            text-align: center;
+        `;
+
+        // Add timer text
+        const timer = document.createElement('div');
+        timer.style.cssText = `
+            font-size: ${mobile ? '24px' : '18px'};
+            margin-bottom: ${mobile ? '10px' : '8px'};
+            color: #FFB8AE;
+        `;
+        timer.textContent = '15';
+
+        // Add progress bar container
+        const progressContainer = document.createElement('div');
+        progressContainer.style.cssText = `
+            width: 100%;
+            height: ${mobile ? '12px' : '8px'};
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+        `;
+
+        // Add progress bar
+        const progressBar = document.createElement('div');
+        progressBar.style.cssText = `
+            width: 100%;
+            height: 100%;
+            background: #FFB8AE;
+            border-radius: 10px;
+            transition: width 0.1s linear;
+        `;
+        
+        progressContainer.appendChild(progressBar);
+        timerContainer.appendChild(timer);
+        timerContainer.appendChild(progressContainer);
+        modal.appendChild(timerContainer);
+
+        // Start countdown
+        let timeLeft = 15;
+        const countdown = setInterval(() => {
+            timeLeft--;
+            timer.textContent = timeLeft;
+            
+            // Update progress bar
+            const progress = (timeLeft / 15) * 100;
+            progressBar.style.width = `${progress}%`;
+            
+            if (timeLeft <= 5) {
+                timer.style.color = '#f44336';
+                progressBar.style.background = '#f44336';
+            }
+            
+            if (timeLeft <= 0) {
+                clearInterval(countdown);
+                modal.remove();
+                showResult(false, quiz.correctAnswer, callback);
+            }
+        }, 1000);
+
         // Add choice buttons
         quiz.choices.forEach((choice, index) => {
             const button = document.createElement('button');
@@ -117,7 +180,10 @@ var quiz = (function() {
             };
 
             // Add both click and touch events
-            button.onclick = handleClick;
+            button.onclick = (e) => {
+                clearInterval(countdown);
+                handleClick(e);
+            };
             button.ontouchstart = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -129,6 +195,7 @@ var quiz = (function() {
                 e.stopPropagation();
                 button.style.background = '#000';
                 button.style.color = '#FFB8AE';
+                clearInterval(countdown);
                 handleClick(e);
             };
             button.ontouchcancel = (e) => {
