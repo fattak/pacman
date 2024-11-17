@@ -9,12 +9,18 @@ var energizer = (function() {
     // how many seconds to display points when ghost is eaten
     var pointsDuration = 1;
 
+    // Store the original duration for doubling
+    var originalDuration = 0;
+    var isDurationDoubled = false;
+
     // how long to stay energized based on current level
     var getDuration = (function(){
         var seconds = [6,5,4,3,2,5,2,2,1,5,2,1,1,3,1,1,0,1];
         return function() {
             var i = level;
-            return (i > 18) ? 0 : 60*seconds[i-1];
+            if (i > 18) return 0;
+            var duration = 60 * seconds[i-1];
+            return isDurationDoubled ? duration * 2 : duration;
         };
     })();
 
@@ -64,11 +70,12 @@ var energizer = (function() {
             active = false;
             points = 100;
             pointsFramesLeft = 0;
-            for (i=0; i<4; i++)
+            isDurationDoubled = false;
+            for (var i=0; i<4; i++) {
                 ghosts[i].scared = false;
+            }
         },
         update: function() {
-            var i;
             if (active) {
                 if (count == getDuration())
                     this.reset();
@@ -76,16 +83,40 @@ var energizer = (function() {
                     count++;
             }
         },
-        activate: function() { 
-            active = true;
-            count = 0;
-            points = 100;
-            for (i=0; i<4; i++) {
-                ghosts[i].onEnergized();
+        activate: function() {
+            // Pause game first
+            if (!executive.isPaused()) {
+                executive.togglePause();
             }
-            if (getDuration() == 0) { // if no duration, then immediately reset
-                this.reset();
-            }
+            
+            // Display quiz
+            quiz.prompt(function(correct) {
+                if (correct) {
+                    // Double duration
+                    isDurationDoubled = true;
+                    
+                    // Spawn a fruit
+                    if (fruit && typeof fruit.startFruit === 'function') {
+                        fruit.startFruit();
+                    }
+                }
+                
+                // Activate energizer
+                active = true;
+                count = 0;
+                points = 100;
+                for (var i=0; i<4; i++) {
+                    ghosts[i].onEnergized();
+                }
+                if (getDuration() == 0) { // if no duration, then immediately reset
+                    this.reset();
+                }
+                
+                // Resume game
+                if (executive.isPaused()) {
+                    executive.togglePause();
+                }
+            });
         },
         isActive: function() { return active; },
         isFlash: function() { 
