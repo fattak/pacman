@@ -1,7 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////////
 // States
 // (main loops for each state of the game)
-// state is set to any of these states, each containing an init(), draw(), and update()
 
 // current game state
 var state;
@@ -1285,7 +1284,6 @@ var playState = {
         if (practiceMode) {
             vcr.reset();
         }
-        this.showGreatMessage = false;
     },
     draw: function() {
         renderer.setLevelFlash(false);
@@ -1298,9 +1296,9 @@ var playState = {
         renderer.drawTargets();
         renderer.endMapClip();
 
-        // Draw "Great!" message if needed
-        if (this.showGreatMessage) {
-            renderer.drawMessage("GREAT!", "#FFF", 11, 20);
+        // Draw "Time x2" message if needed
+        if (energizer.isShowingTimeX2()) {
+            renderer.drawMessage("TIME x2", "#FFF", 11, 20);
         }
     },
 
@@ -1312,21 +1310,8 @@ var playState = {
             g = ghosts[i];
             if (g.tile.x == pacman.tile.x && g.tile.y == pacman.tile.y && g.mode == GHOST_OUTSIDE) {
                 if (g.scared) { // eat ghost
-                    // Pause the game
-                    executive.togglePause();
-                    
-                    // Show dialog with "Great!" message
-                    this.showGreatMessage = true;
-                    
-                    // Resume game after 1 second
-                    var that = this;
-                    setTimeout(function() {
-                        that.showGreatMessage = false;
-                        executive.togglePause();
-                        energizer.addPoints();
-                        g.onEaten();
-                    }, 1000);
-                    
+                    energizer.addPoints();
+                    g.onEaten();
                     return true;
                 }
                 else if (pacman.invincible) // pass through ghost

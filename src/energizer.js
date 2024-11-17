@@ -62,6 +62,10 @@ var energizer = (function() {
         pointsFramesLeft = savedPointsFramesLeft[t];
     };
 
+    // Timer for "Time x2" message
+    var timeX2MessageFrames = 0;
+    var timeX2MessageDuration = 180; // 3 seconds at 60fps
+
     return {
         save: save,
         load: load,
@@ -71,6 +75,7 @@ var energizer = (function() {
             points = 100;
             pointsFramesLeft = 0;
             isDurationDoubled = false;
+            timeX2MessageFrames = 0;
             for (var i=0; i<4; i++) {
                 ghosts[i].scared = false;
             }
@@ -81,6 +86,9 @@ var energizer = (function() {
                     this.reset();
                 else
                     count++;
+            }
+            if (timeX2MessageFrames > 0) {
+                timeX2MessageFrames--;
             }
         },
         activate: function() {
@@ -95,9 +103,18 @@ var energizer = (function() {
                     // Double duration
                     isDurationDoubled = true;
                     
+                    // Start "Time x2" message timer
+                    timeX2MessageFrames = timeX2MessageDuration;
+                    
                     // Spawn a fruit
-                    if (fruit && typeof fruit.startFruit === 'function') {
-                        fruit.startFruit();
+                    if (fruit) {
+                        if (typeof fruit.spawn === 'function') {
+                            fruit.spawn();
+                        } else if (typeof fruit.start === 'function') {
+                            fruit.start();
+                        } else if (typeof fruit.reset === 'function') {
+                            fruit.reset();
+                        }
                     }
                 }
                 
@@ -133,5 +150,8 @@ var energizer = (function() {
         },
         showingPoints: function() { return pointsFramesLeft > 0; },
         updatePointsTimer: function() { if (pointsFramesLeft > 0) pointsFramesLeft--; },
+        
+        // For "Time x2" message
+        isShowingTimeX2: function() { return timeX2MessageFrames > 0; }
     };
 })();

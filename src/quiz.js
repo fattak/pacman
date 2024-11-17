@@ -50,8 +50,15 @@ var quiz = (function() {
         };
     }
 
+    // Check if device is mobile
+    function isMobile() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+
     // Create and show the quiz modal
     function showQuizModal(quiz, callback) {
+        const mobile = isMobile();
+        
         // Create modal container
         const modal = document.createElement('div');
         modal.style.cssText = `
@@ -60,22 +67,24 @@ var quiz = (function() {
             left: 50%;
             transform: translate(-50%, -50%);
             background: rgba(0, 0, 0, 0.9);
-            padding: 20px;
+            padding: ${mobile ? '40px' : '20px'};
             border-radius: 10px;
             border: 2px solid #FFB8AE;
             color: white;
             font-family: "Press Start 2P", monospace;
             text-align: center;
             z-index: 1000;
+            -webkit-tap-highlight-color: transparent;
         `;
 
         // Add question
         const question = document.createElement('div');
         question.textContent = quiz.question;
         question.style.cssText = `
-            font-size: 24px;
-            margin-bottom: 20px;
+            font-size: ${mobile ? '32px' : '24px'};
+            margin-bottom: ${mobile ? '40px' : '20px'};
             color: #FFB8AE;
+            line-height: 1.4;
         `;
         modal.appendChild(question);
 
@@ -85,30 +94,62 @@ var quiz = (function() {
             button.textContent = choice;
             button.style.cssText = `
                 display: block;
-                width: 200px;
-                margin: 10px auto;
-                padding: 10px;
+                width: ${mobile ? '280px' : '200px'};
+                margin: ${mobile ? '20px' : '10px'} auto;
+                padding: ${mobile ? '20px' : '10px'};
                 background: #000;
                 border: 2px solid #FFB8AE;
                 color: #FFB8AE;
                 font-family: "Press Start 2P", monospace;
-                font-size: 16px;
+                font-size: ${mobile ? '24px' : '16px'};
                 cursor: pointer;
-                transition: all 0.2s;
+                -webkit-tap-highlight-color: transparent;
+                user-select: none;
+                touch-action: manipulation;
             `;
-            button.onmouseover = () => {
-                button.style.background = '#FFB8AE';
-                button.style.color = '#000';
-            };
-            button.onmouseout = () => {
-                button.style.background = '#000';
-                button.style.color = '#FFB8AE';
-            };
-            button.onclick = () => {
+
+            const handleClick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 modal.remove();
                 const isCorrect = index === quiz.correctIndex;
                 showResult(isCorrect, quiz.correctAnswer, callback);
             };
+
+            // Add both click and touch events
+            button.onclick = handleClick;
+            button.ontouchstart = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                button.style.background = '#FFB8AE';
+                button.style.color = '#000';
+            };
+            button.ontouchend = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                button.style.background = '#000';
+                button.style.color = '#FFB8AE';
+                handleClick(e);
+            };
+            button.ontouchcancel = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                button.style.background = '#000';
+                button.style.color = '#FFB8AE';
+            };
+
+            // Mouse events for non-touch devices
+            if (!mobile) {
+                button.onmouseover = () => {
+                    button.style.background = '#FFB8AE';
+                    button.style.color = '#000';
+                };
+                button.onmouseout = () => {
+                    button.style.background = '#000';
+                    button.style.color = '#FFB8AE';
+                };
+            }
+
             modal.appendChild(button);
         });
 
@@ -117,6 +158,8 @@ var quiz = (function() {
 
     // Show the result message
     function showResult(isCorrect, correctAnswer, callback) {
+        const mobile = isMobile();
+        
         const resultModal = document.createElement('div');
         resultModal.style.cssText = `
             position: fixed;
@@ -124,14 +167,18 @@ var quiz = (function() {
             left: 50%;
             transform: translate(-50%, -50%);
             background: rgba(0, 0, 0, 0.9);
-            padding: 20px;
+            padding: ${mobile ? '40px' : '20px'};
             border-radius: 10px;
             border: 2px solid ${isCorrect ? '#4CAF50' : '#f44336'};
             color: white;
             font-family: "Press Start 2P", monospace;
             text-align: center;
             z-index: 1001;
-            font-size: 20px;
+            font-size: ${mobile ? '28px' : '20px'};
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            touch-action: manipulation;
         `;
 
         if (isCorrect) {
@@ -140,17 +187,43 @@ var quiz = (function() {
         } else {
             resultModal.innerHTML = `
                 <div style="color: #f44336;">Sorry Wrong...</div>
-                <div style="margin-top: 10px;">The correct answer is ${correctAnswer}</div>
+                <div style="margin-top: ${mobile ? '20px' : '10px'};">The correct answer is ${correctAnswer}</div>
             `;
         }
 
-        document.body.appendChild(resultModal);
-
-        // Remove result after delay and call callback
+        // Add a small delay before allowing dismissal
+        let canDismiss = false;
         setTimeout(() => {
+            canDismiss = true;
+        }, 500);
+
+        const handleDismiss = (e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            if (!canDismiss) return;
+            
             resultModal.remove();
+            document.removeEventListener('click', handleDismiss);
+            document.removeEventListener('touchend', handleDismiss);
+            document.removeEventListener('keydown', handleKeydown);
             callback(isCorrect);
-        }, 2000);
+        };
+
+        // Handle click/tap anywhere
+        document.addEventListener('click', handleDismiss);
+        document.addEventListener('touchend', handleDismiss);
+
+        // Handle arrow keys
+        const handleKeydown = (e) => {
+            if (e.key.startsWith('Arrow')) {
+                handleDismiss();
+            }
+        };
+        document.addEventListener('keydown', handleKeydown);
+
+        document.body.appendChild(resultModal);
     }
 
     return {
