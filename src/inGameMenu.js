@@ -193,15 +193,22 @@ var inGameMenu = (function() {
             }
         },
         draw: function(ctx) {
-            if (practiceMode) {
-                getVisibleMenu().draw(ctx);
+            var menu = getVisibleMenu();
+            if (menu) {
+                // Draw dark overlay when menu is open
+                ctx.fillStyle = "rgba(0,0,0,0.8)";
+                ctx.fillRect(-mapPad-1,-mapPad-1,mapWidth+1,mapHeight+1);
+                menu.draw(ctx);
             }
-            btn.draw(ctx);
-            // Show progress bar when invincible, otherwise show POW button if has potions
-            if (pacman.invincible) {
-                drawInvincibleProgress(ctx);
-            } else if (pacman.potionCount > 0) {
-                powBtn.draw(ctx);
+            else {
+                // Draw buttons only when menu is not visible
+                btn.draw(ctx);
+                // Show progress bar when invincible, otherwise show POW button if has potions
+                if (pacman.invincible) {
+                    drawInvincibleProgress(ctx);
+                } else if (pacman.potionCount > 0) {
+                    powBtn.draw(ctx);
+                }
             }
         },
         isOpen: function() {
