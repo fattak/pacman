@@ -10693,6 +10693,7 @@ var newGameState = (function() {
             extraLives = practiceMode ? Infinity : 3;
             setScore(0);
             setFruitFromGameMode();
+            pacman.potionCount = 2; // Set initial potion count to 2
             readyNewState.init();
         },
         setStartLevel: function(i) {
@@ -10781,9 +10782,6 @@ var readyNewState = newChildObject(readyState, {
         // notify other objects of new level
         ghostReleaser.onNewLevel();
         elroyTimer.onNewLevel();
-
-        // Add potion when starting new level
-        pacman.addPotion();
 
         // inherit attributes from readyState
         readyState.init.call(this);
@@ -11131,6 +11129,7 @@ var finishState = (function(){
             204: { draw: function() { flashFloorAndDraw(false); } },
             216: {
                 init: function() {
+                    pacman.addPotion(); // Add potion as reward for completing level
                     if (!triggerCutsceneAtEndLevel()) {
                         switchState(readyNewState,60);
                     }
