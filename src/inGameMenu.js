@@ -25,6 +25,27 @@ var inGameMenu = (function() {
     powBtn.setText("(Q)POW");
     powBtn.setFont(tileSize+"px ArcadeR","#FFF");
 
+    // Draw invincibility progress bar
+    var drawInvincibleProgress = function(ctx) {
+        var progressWidth = (pacman.invincibleTimer / pacman.invincibleDuration) * (w+2*tileSize);
+        
+        // Draw background
+        ctx.fillStyle = "rgba(100,100,100,0.5)";
+        ctx.fillRect(mapWidth/2 + w/2 + tileSize, mapHeight, w+2*tileSize, h);
+        
+        // Draw progress
+        ctx.fillStyle = "#FFD700"; // Gold color for invincibility
+        ctx.fillRect(mapWidth/2 + w/2 + tileSize, mapHeight, progressWidth, h);
+        
+        // Draw time text
+        ctx.fillStyle = "#000";
+        ctx.font = tileSize+"px ArcadeR";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        var secondsLeft = Math.ceil(pacman.invincibleTimer / 60); // Convert frames to seconds
+        ctx.fillText(secondsLeft+"s", mapWidth/2 + w/2 + tileSize + (w+2*tileSize)/2, mapHeight + h/2);
+    };
+
     // button to enable in-game menu
     var btn = new Button(mapWidth/2 - w/2,mapHeight,w,h, function() {
         showMainMenu();
@@ -176,8 +197,10 @@ var inGameMenu = (function() {
                 getVisibleMenu().draw(ctx);
             }
             btn.draw(ctx);
-            // Only show POW button if not invincible and has potions
-            if (!pacman.invincible && pacman.potionCount > 0) {
+            // Show progress bar when invincible, otherwise show POW button if has potions
+            if (pacman.invincible) {
+                drawInvincibleProgress(ctx);
+            } else if (pacman.potionCount > 0) {
                 powBtn.draw(ctx);
             }
         },
