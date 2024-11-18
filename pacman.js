@@ -4644,14 +4644,17 @@ var inGameMenu = (function() {
 
     // Draw invincibility progress bar
     var drawInvincibleProgress = function(ctx) {
-        var progressWidth = (pacman.invincibleTimer / pacman.invincibleDuration) * (w+2*tileSize);
+        // Calculate progress based on current timer and max duration
+        var maxDuration = pacman.invincibleTimer > pacman.invincibleDuration ? 
+            pacman.invincibleDuration * 2 : pacman.invincibleDuration;
+        var progressWidth = (pacman.invincibleTimer / maxDuration) * (w+2*tileSize);
         
         // Draw background
         ctx.fillStyle = "rgba(100,100,100,0.5)";
         ctx.fillRect(mapWidth/2 + w/2 + tileSize, mapHeight, w+2*tileSize, h);
         
         // Draw progress
-        ctx.fillStyle = "#FFD700"; // Gold color for invincibility
+        ctx.fillStyle = pacman.invincibleTimer > pacman.invincibleDuration ? "#FFA500" : "#FFD700"; // Orange for bonus time
         ctx.fillRect(mapWidth/2 + w/2 + tileSize, mapHeight, progressWidth, h);
         
         // Draw time text
@@ -4820,9 +4823,11 @@ var inGameMenu = (function() {
             else {
                 // Draw buttons only when menu is not visible
                 btn.draw(ctx);
-                // Show progress bar when invincible, otherwise show POW button if has potions
+                // Show progress bar when invincible or quiz active, otherwise show POW button if has potions
                 if (pacman.invincible) {
                     drawInvincibleProgress(ctx);
+                } else if (pacman.quizActive) {
+                    // Hide POW button during quiz
                 } else if (pacman.potionCount > 0) {
                     powBtn.draw(ctx);
                 }
@@ -8038,6 +8043,7 @@ var Player = function() {
     this.invincibleDuration = 300; // 5 seconds at 60fps
     this.blinkTimer = 0;
     this.visible = true;
+    this.quizActive = false;  // Track if a quiz is in progress
 
     // determines if this player should be AI controlled
     this.ai = false;
@@ -8264,11 +8270,29 @@ Player.prototype.update = function(j) {
 };
 
 Player.prototype.usePotion = function() {
-    if (this.potionCount > 0 && !this.invincible) {
+    if (this.potionCount > 0 && !this.invincible && !this.quizActive) {
         this.potionCount--;
-        this.invincible = true;
-        this.invincibleTimer = this.invincibleDuration;
-        this.blinkTimer = 0;
+        this.quizActive = true;
+        
+        // Pause game first
+        if (!executive.isPaused()) {
+            executive.togglePause();
+        }
+        
+        // Show quiz and handle result
+        quiz.prompt((isCorrect) => {
+            this.quizActive = false;
+            this.invincible = true;
+            // Double duration if answered correctly
+            this.invincibleTimer = isCorrect ? this.invincibleDuration * 2 : this.invincibleDuration;
+            this.blinkTimer = 0;
+            
+            // Resume game
+            if (executive.isPaused()) {
+                executive.togglePause();
+            }
+        });
+        
         return true;
     }
     return false;

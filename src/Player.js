@@ -19,6 +19,7 @@ var Player = function() {
     this.invincibleDuration = 300; // 5 seconds at 60fps
     this.blinkTimer = 0;
     this.visible = true;
+    this.quizActive = false;  // Track if a quiz is in progress
 
     // determines if this player should be AI controlled
     this.ai = false;
@@ -245,11 +246,29 @@ Player.prototype.update = function(j) {
 };
 
 Player.prototype.usePotion = function() {
-    if (this.potionCount > 0 && !this.invincible) {
+    if (this.potionCount > 0 && !this.invincible && !this.quizActive) {
         this.potionCount--;
-        this.invincible = true;
-        this.invincibleTimer = this.invincibleDuration;
-        this.blinkTimer = 0;
+        this.quizActive = true;
+        
+        // Pause game first
+        if (!executive.isPaused()) {
+            executive.togglePause();
+        }
+        
+        // Show quiz and handle result
+        quiz.prompt((isCorrect) => {
+            this.quizActive = false;
+            this.invincible = true;
+            // Double duration if answered correctly
+            this.invincibleTimer = isCorrect ? this.invincibleDuration * 2 : this.invincibleDuration;
+            this.blinkTimer = 0;
+            
+            // Resume game
+            if (executive.isPaused()) {
+                executive.togglePause();
+            }
+        });
+        
         return true;
     }
     return false;
