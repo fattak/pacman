@@ -177,7 +177,37 @@ var quiz = (function() {
         // Add choice buttons
         quiz.choices.forEach((choice, index) => {
             const button = document.createElement('button');
-            button.textContent = `(${index + 1}) ${choice}`;  // Add number prefix
+            
+            // Create container for number and choice
+            const buttonContent = document.createElement('div');
+            buttonContent.style.cssText = `
+                display: flex;
+                align-items: center;
+                width: 100%;
+                position: relative;
+            `;
+            
+            // Number on the left
+            const numberSpan = document.createElement('span');
+            numberSpan.textContent = `(${index + 1})`;
+            numberSpan.style.cssText = `
+                position: absolute;
+                left: ${mobile ? '20px' : '10px'};
+            `;
+            
+            // Choice text centered
+            const choiceSpan = document.createElement('span');
+            choiceSpan.textContent = choice;
+            choiceSpan.style.cssText = `
+                flex-grow: 1;
+                text-align: center;
+                margin: 0 ${mobile ? '40px' : '30px'};  // Space for number on both sides
+            `;
+            
+            buttonContent.appendChild(numberSpan);
+            buttonContent.appendChild(choiceSpan);
+            button.appendChild(buttonContent);
+            
             button.style.cssText = `
                 display: block;
                 width: ${mobile ? '280px' : '200px'};
@@ -192,6 +222,7 @@ var quiz = (function() {
                 -webkit-tap-highlight-color: transparent;
                 user-select: none;
                 touch-action: manipulation;
+                text-align: left;  // Allow internal alignment to take effect
             `;
 
             const handleClick = (e) => {
