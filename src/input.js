@@ -215,19 +215,44 @@ var initSwipe = function() {
     // minimum distance from anchor before direction is registered
     var r = 4;
     
+    // double tap detection
+    var lastTapTime = 0;
+    var doubleTapDelay = 300; // milliseconds
+    var lastTapX = 0;
+    var lastTapY = 0;
+    var doubleTapRadius = 30; // pixels
+    
     var touchStart = function(event) {
         event.preventDefault();
         var fingerCount = event.touches.length;
         if (fingerCount == 1) {
-
             // commit new anchor
             x = event.touches[0].pageX;
             y = event.touches[0].pageY;
-
         }
         else {
             touchCancel(event);
         }
+    };
+
+    var touchEnd = function(event) {
+        event.preventDefault();
+        
+        // check for double tap
+        var currentTime = new Date().getTime();
+        var timeDiff = currentTime - lastTapTime;
+        var distance = Math.sqrt(Math.pow(x - lastTapX, 2) + Math.pow(y - lastTapY, 2));
+        
+        if (timeDiff < doubleTapDelay && distance < doubleTapRadius) {
+            // Double tap detected
+            if (isPlayState()) {
+                pacman.usePotion();
+            }
+        }
+        
+        lastTapTime = currentTime;
+        lastTapX = x;
+        lastTapY = y;
     };
 
     var touchMove = function(event) {
@@ -258,10 +283,6 @@ var initSwipe = function() {
         else {
             touchCancel(event);
         }
-    };
-
-    var touchEnd = function(event) {
-        event.preventDefault();
     };
 
     var touchCancel = function(event) {

@@ -150,10 +150,12 @@ Button.prototype = {
 
     enable: function() {
         this.frame = 0;
+        this.enabled = true;
         this.onEnable();
     },
 
     disable: function() {
+        this.enabled = false;
         this.onDisable();
     },
 

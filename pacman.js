@@ -4349,10 +4349,12 @@ Button.prototype = {
 
     enable: function() {
         this.frame = 0;
+        this.enabled = true;
         this.onEnable();
     },
 
     disable: function() {
+        this.enabled = false;
         this.onDisable();
     },
 
@@ -4617,7 +4619,9 @@ Menu.prototype = {
 // In-Game Menu
 var inGameMenu = (function() {
 
-    var w=tileSize*6,h=tileSize*3;
+    // button dimensions
+    var w = 7*tileSize;
+    var h = 2*tileSize;
 
     var getMainMenu = function() {
         return practiceMode ? practiceMenu : menu;
@@ -4636,6 +4640,15 @@ var inGameMenu = (function() {
     });
     btn.setText("MENU");
     btn.setFont(tileSize+"px ArcadeR","#FFF");
+
+    // POW button for potion activation (wider for longer text)
+    var powBtn = new Button(mapWidth/2 + w/2 + tileSize,mapHeight,w+2*tileSize,h, function() {
+        if (pacman.potionCount > 0) {
+            pacman.usePotion();
+        }
+    });
+    powBtn.setText("(Q)POW");
+    powBtn.setFont(tileSize+"px ArcadeR","#FFF");
 
     // confirms a menu action
     var confirmMenu = new Menu("QUESTION?",2*tileSize,5*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
@@ -4759,24 +4772,35 @@ var inGameMenu = (function() {
     return {
         onHudEnable: function() {
             btn.enable();
+            powBtn.enable();
         },
         onHudDisable: function() {
             btn.disable();
+            powBtn.disable();
         },
         update: function() {
-            if (btn.isEnabled) {
-                btn.update();
+            // Update both buttons
+            btn.update();
+            powBtn.update();
+            
+            var menu = getVisibleMenu();
+            if (menu) {
+                menu.update();
             }
         },
         draw: function(ctx) {
-            var m = getVisibleMenu();
-            if (m) {
+            var menu = getVisibleMenu();
+            if (menu) {
                 ctx.fillStyle = "rgba(0,0,0,0.8)";
                 ctx.fillRect(-mapPad-1,-mapPad-1,mapWidth+1,mapHeight+1);
-                m.draw(ctx);
+                menu.draw(ctx);
             }
             else {
-                btn.draw(ctx);
+                // Draw buttons only when menu is not visible
+                btn.draw(ctx);  // Always draw MENU button
+                if (pacman.potionCount > 0) {  // Only draw POW button if we have potions
+                    powBtn.draw(ctx);
+                }
             }
         },
         isOpen: function() {
@@ -4790,7 +4814,6 @@ var inGameMenu = (function() {
         },
     };
 })();
-
 //@line 1 "src/sprites.js"
 //////////////////////////////////////////////////////////////////////////////////////
 // Sprites
@@ -11359,19 +11382,44 @@ var initSwipe = function() {
     // minimum distance from anchor before direction is registered
     var r = 4;
     
+    // double tap detection
+    var lastTapTime = 0;
+    var doubleTapDelay = 300; // milliseconds
+    var lastTapX = 0;
+    var lastTapY = 0;
+    var doubleTapRadius = 30; // pixels
+    
     var touchStart = function(event) {
         event.preventDefault();
         var fingerCount = event.touches.length;
         if (fingerCount == 1) {
-
             // commit new anchor
             x = event.touches[0].pageX;
             y = event.touches[0].pageY;
-
         }
         else {
             touchCancel(event);
         }
+    };
+
+    var touchEnd = function(event) {
+        event.preventDefault();
+        
+        // check for double tap
+        var currentTime = new Date().getTime();
+        var timeDiff = currentTime - lastTapTime;
+        var distance = Math.sqrt(Math.pow(x - lastTapX, 2) + Math.pow(y - lastTapY, 2));
+        
+        if (timeDiff < doubleTapDelay && distance < doubleTapRadius) {
+            // Double tap detected
+            if (isPlayState()) {
+                pacman.usePotion();
+            }
+        }
+        
+        lastTapTime = currentTime;
+        lastTapX = x;
+        lastTapY = y;
     };
 
     var touchMove = function(event) {
@@ -11402,10 +11450,6 @@ var initSwipe = function() {
         else {
             touchCancel(event);
         }
-    };
-
-    var touchEnd = function(event) {
-        event.preventDefault();
     };
 
     var touchCancel = function(event) {
