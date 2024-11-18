@@ -4633,14 +4633,6 @@ var inGameMenu = (function() {
         getMainMenu().disable();
     };
 
-    // button to enable in-game menu
-    var btn = new Button(mapWidth/2 - w/2,mapHeight,w,h, function() {
-        showMainMenu();
-        vcr.onHudDisable();
-    });
-    btn.setText("MENU");
-    btn.setFont(tileSize+"px ArcadeR","#FFF");
-
     // POW button for potion activation (wider for longer text)
     var powBtn = new Button(mapWidth/2 + w/2 + tileSize,mapHeight,w+2*tileSize,h, function() {
         if (pacman.potionCount > 0) {
@@ -4649,6 +4641,14 @@ var inGameMenu = (function() {
     });
     powBtn.setText("(Q)POW");
     powBtn.setFont(tileSize+"px ArcadeR","#FFF");
+
+    // button to enable in-game menu
+    var btn = new Button(mapWidth/2 - w/2,mapHeight,w,h, function() {
+        showMainMenu();
+        vcr.onHudDisable();
+    });
+    btn.setText("MENU");
+    btn.setFont(tileSize+"px ArcadeR","#FFF");
 
     // confirms a menu action
     var confirmMenu = new Menu("QUESTION?",2*tileSize,5*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
@@ -4789,18 +4789,13 @@ var inGameMenu = (function() {
             }
         },
         draw: function(ctx) {
-            var menu = getVisibleMenu();
-            if (menu) {
-                ctx.fillStyle = "rgba(0,0,0,0.8)";
-                ctx.fillRect(-mapPad-1,-mapPad-1,mapWidth+1,mapHeight+1);
-                menu.draw(ctx);
+            if (practiceMode) {
+                getVisibleMenu().draw(ctx);
             }
-            else {
-                // Draw buttons only when menu is not visible
-                btn.draw(ctx);  // Always draw MENU button
-                if (pacman.potionCount > 0) {  // Only draw POW button if we have potions
-                    powBtn.draw(ctx);
-                }
+            btn.draw(ctx);
+            // Only show POW button if not invincible and has potions
+            if (!pacman.invincible && pacman.potionCount > 0) {
+                powBtn.draw(ctx);
             }
         },
         isOpen: function() {
