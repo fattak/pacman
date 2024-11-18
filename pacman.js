@@ -3525,7 +3525,6 @@ var initRenderer = function(){
             ctx.fillText(getHighScore(), tileSize*map.numCols/2, tileSize*2);
         },
 
-        // draw the extra lives indicator
         drawExtraLives: function() {
             var i;
             ctx.fillStyle = "rgba(255,255,0,0.6)";
@@ -3534,7 +3533,6 @@ var initRenderer = function(){
                 this.drawCenterPixelSq(ctx, (2*i+3)*tileSize, (map.numRows-2)*tileSize+midTile.y,this.actorSize);
         },
 
-        // draw the current level indicator
         drawLevelIcons: function() {
             var i;
             ctx.fillStyle = "rgba(255,255,255,0.5)";
@@ -3869,7 +3867,6 @@ var initRenderer = function(){
             ctx.textAlign = "right";
             ctx.fillText("1UP", 6*tileSize, 0);
             ctx.fillText(practiceMode ? "PRACTICE" : "HIGH SCORE", 19*tileSize, 0);
-            //ctx.fillText("2UP", 25*tileSize, 0);
 
             // TODO: player two score
             var score = getScore();
@@ -3886,6 +3883,12 @@ var initRenderer = function(){
                 }
                 ctx.fillText(highScore, 17*tileSize, y);
             }
+
+            // draw potion count
+            ctx.textAlign = "right";
+            ctx.fillStyle = "#FFF";
+            ctx.fillText("POTION", 27*tileSize, 0);
+            ctx.fillText(pacman.potionCount, 27*tileSize, y);
         },
 
         // draw ghost
@@ -4039,6 +4042,38 @@ var initRenderer = function(){
                     }
                 }
             }
+        },
+
+        drawScore: function() {
+            ctx.font = tileSize + "px ArcadeR";
+            ctx.textBaseline = "top";
+            ctx.fillStyle = "#FFF";
+
+            ctx.textAlign = "right";
+            ctx.fillText("1UP", 6*tileSize, 0);
+            ctx.fillText(practiceMode ? "PRACTICE" : "HIGH SCORE", 19*tileSize, 0);
+
+            // TODO: player two score
+            var score = getScore();
+            if (score == 0) {
+                score = "00";
+            }
+            var y = tileSize+1;
+            ctx.fillText(score, 7*tileSize, y);
+
+            if (!practiceMode) {
+                var highScore = getHighScore();
+                if (highScore == 0) {
+                    highScore = "00";
+                }
+                ctx.fillText(highScore, 17*tileSize, y);
+            }
+
+            // draw potion count
+            ctx.textAlign = "right";
+            ctx.fillStyle = "#FFF";
+            ctx.fillText("POTION", 27*tileSize, 0);
+            ctx.fillText(pacman.potionCount, 27*tileSize, y);
         },
 
     });
@@ -7948,10 +7983,16 @@ var Player = function() {
 
     this.nextDir = {};
 
+    // Add potion system
+    this.potionCount = 0;
+    this.invincible = false;
+    this.invincibleTimer = 0;
+    this.invincibleDuration = 300; // 5 seconds at 60fps
+    this.blinkTimer = 0;
+    this.visible = true;
+
     // determines if this player should be AI controlled
     this.ai = false;
-    this.invincible = false;
-
     this.savedNextDirEnum = {};
     this.savedStopped = {};
     this.savedEatPauseFramesLeft = {};
@@ -7983,8 +8024,12 @@ Player.prototype.reset = function() {
     this.setNextDir(this.startDirEnum);
     this.stopped = false;
     this.inputDirEnum = undefined;
-
     this.eatPauseFramesLeft = 0;   // current # of frames left to pause after eating
+
+    // Reset invincibility but keep potions
+    this.invincible = false;
+    this.invincibleTimer = 0;
+    this.visible = true;
 
     // call Actor's reset function to reset to initial position and direction
     Actor.prototype.reset.apply(this);
@@ -8136,6 +8181,19 @@ Player.prototype.update = function(j) {
     // call super function to update position and direction
     Actor.prototype.update.call(this,j);
 
+    // Update invincibility
+    if (this.invincible) {
+        this.invincibleTimer--;
+        // Blink effect
+        this.blinkTimer = (this.blinkTimer + 1) % 10;
+        this.visible = this.blinkTimer < 5;
+        
+        if (this.invincibleTimer <= 0) {
+            this.invincible = false;
+            this.visible = true;
+        }
+    }
+
     // eat something
     if (map) {
         var t = map.getTile(this.tile.x, this.tile.y);
@@ -8155,6 +8213,21 @@ Player.prototype.update = function(j) {
                 energizer.activate();
         }
     }
+};
+
+Player.prototype.usePotion = function() {
+    if (this.potionCount > 0 && !this.invincible) {
+        this.potionCount--;
+        this.invincible = true;
+        this.invincibleTimer = this.invincibleDuration;
+        this.blinkTimer = 0;
+        return true;
+    }
+    return false;
+};
+
+Player.prototype.addPotion = function() {
+    this.potionCount++;
 };
 //@line 1 "src/actors.js"
 //////////////////////////////////////////////////////////////////////////////////////
@@ -10686,6 +10759,9 @@ var readyNewState = newChildObject(readyState, {
         ghostReleaser.onNewLevel();
         elroyTimer.onNewLevel();
 
+        // Add potion when starting new level
+        pacman.addPotion();
+
         // inherit attributes from readyState
         readyState.init.call(this);
     },
@@ -11065,7 +11141,6 @@ var overState = (function() {
         },
     };
 })();
-
 //@line 1 "src/input.js"
 //////////////////////////////////////////////////////////////////////////////////////
 // Input
@@ -11240,7 +11315,16 @@ var overState = (function() {
     addKeyDown(KEY_M, function() { switchState(finishState); }, function() { return state == playState; });
 
     // Draw Actor Targets (fishpoles)
-    addKeyDown(KEY_Q, function() { blinky.isDrawTarget = !blinky.isDrawTarget; }, isPracticeMode);
+    addKeyDown(KEY_Q, function() { 
+        if (isPlayState()) {
+            pacman.usePotion();
+        }
+        else if (isPracticeMode()) {
+            blinky.isDrawTarget = !blinky.isDrawTarget;
+        }
+    });
+
+    // Draw Actor Paths
     addKeyDown(KEY_W, function() { pinky.isDrawTarget = !pinky.isDrawTarget; }, isPracticeMode);
     addKeyDown(KEY_E, function() { inky.isDrawTarget = !inky.isDrawTarget; }, isPracticeMode);
     addKeyDown(KEY_R, function() { clyde.isDrawTarget = !clyde.isDrawTarget; }, isPracticeMode);

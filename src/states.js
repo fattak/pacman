@@ -1253,6 +1253,9 @@ var readyNewState = newChildObject(readyState, {
         ghostReleaser.onNewLevel();
         elroyTimer.onNewLevel();
 
+        // Add potion when starting new level
+        pacman.addPotion();
+
         // inherit attributes from readyState
         readyState.init.call(this);
     },
@@ -1632,4 +1635,3 @@ var overState = (function() {
         },
     };
 })();
-

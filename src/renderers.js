@@ -549,7 +549,6 @@ var initRenderer = function(){
             ctx.fillText(getHighScore(), tileSize*map.numCols/2, tileSize*2);
         },
 
-        // draw the extra lives indicator
         drawExtraLives: function() {
             var i;
             ctx.fillStyle = "rgba(255,255,0,0.6)";
@@ -558,7 +557,6 @@ var initRenderer = function(){
                 this.drawCenterPixelSq(ctx, (2*i+3)*tileSize, (map.numRows-2)*tileSize+midTile.y,this.actorSize);
         },
 
-        // draw the current level indicator
         drawLevelIcons: function() {
             var i;
             ctx.fillStyle = "rgba(255,255,255,0.5)";
@@ -893,7 +891,6 @@ var initRenderer = function(){
             ctx.textAlign = "right";
             ctx.fillText("1UP", 6*tileSize, 0);
             ctx.fillText(practiceMode ? "PRACTICE" : "HIGH SCORE", 19*tileSize, 0);
-            //ctx.fillText("2UP", 25*tileSize, 0);
 
             // TODO: player two score
             var score = getScore();
@@ -910,6 +907,12 @@ var initRenderer = function(){
                 }
                 ctx.fillText(highScore, 17*tileSize, y);
             }
+
+            // draw potion count
+            ctx.textAlign = "right";
+            ctx.fillStyle = "#FFF";
+            ctx.fillText("POTION", 27*tileSize, 0);
+            ctx.fillText(pacman.potionCount, 27*tileSize, y);
         },
 
         // draw ghost
@@ -1063,6 +1066,38 @@ var initRenderer = function(){
                     }
                 }
             }
+        },
+
+        drawScore: function() {
+            ctx.font = tileSize + "px ArcadeR";
+            ctx.textBaseline = "top";
+            ctx.fillStyle = "#FFF";
+
+            ctx.textAlign = "right";
+            ctx.fillText("1UP", 6*tileSize, 0);
+            ctx.fillText(practiceMode ? "PRACTICE" : "HIGH SCORE", 19*tileSize, 0);
+
+            // TODO: player two score
+            var score = getScore();
+            if (score == 0) {
+                score = "00";
+            }
+            var y = tileSize+1;
+            ctx.fillText(score, 7*tileSize, y);
+
+            if (!practiceMode) {
+                var highScore = getHighScore();
+                if (highScore == 0) {
+                    highScore = "00";
+                }
+                ctx.fillText(highScore, 17*tileSize, y);
+            }
+
+            // draw potion count
+            ctx.textAlign = "right";
+            ctx.fillStyle = "#FFF";
+            ctx.fillText("POTION", 27*tileSize, 0);
+            ctx.fillText(pacman.potionCount, 27*tileSize, y);
         },
 
     });

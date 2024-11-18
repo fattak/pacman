@@ -171,7 +171,16 @@
     addKeyDown(KEY_M, function() { switchState(finishState); }, function() { return state == playState; });
 
     // Draw Actor Targets (fishpoles)
-    addKeyDown(KEY_Q, function() { blinky.isDrawTarget = !blinky.isDrawTarget; }, isPracticeMode);
+    addKeyDown(KEY_Q, function() { 
+        if (isPlayState()) {
+            pacman.usePotion();
+        }
+        else if (isPracticeMode()) {
+            blinky.isDrawTarget = !blinky.isDrawTarget;
+        }
+    });
+
+    // Draw Actor Paths
     addKeyDown(KEY_W, function() { pinky.isDrawTarget = !pinky.isDrawTarget; }, isPracticeMode);
     addKeyDown(KEY_E, function() { inky.isDrawTarget = !inky.isDrawTarget; }, isPracticeMode);
     addKeyDown(KEY_R, function() { clyde.isDrawTarget = !clyde.isDrawTarget; }, isPracticeMode);

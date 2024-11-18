@@ -12,10 +12,16 @@ var Player = function() {
 
     this.nextDir = {};
 
+    // Add potion system
+    this.potionCount = 0;
+    this.invincible = false;
+    this.invincibleTimer = 0;
+    this.invincibleDuration = 300; // 5 seconds at 60fps
+    this.blinkTimer = 0;
+    this.visible = true;
+
     // determines if this player should be AI controlled
     this.ai = false;
-    this.invincible = false;
-
     this.savedNextDirEnum = {};
     this.savedStopped = {};
     this.savedEatPauseFramesLeft = {};
@@ -47,8 +53,12 @@ Player.prototype.reset = function() {
     this.setNextDir(this.startDirEnum);
     this.stopped = false;
     this.inputDirEnum = undefined;
-
     this.eatPauseFramesLeft = 0;   // current # of frames left to pause after eating
+
+    // Reset invincibility but keep potions
+    this.invincible = false;
+    this.invincibleTimer = 0;
+    this.visible = true;
 
     // call Actor's reset function to reset to initial position and direction
     Actor.prototype.reset.apply(this);
@@ -200,6 +210,19 @@ Player.prototype.update = function(j) {
     // call super function to update position and direction
     Actor.prototype.update.call(this,j);
 
+    // Update invincibility
+    if (this.invincible) {
+        this.invincibleTimer--;
+        // Blink effect
+        this.blinkTimer = (this.blinkTimer + 1) % 10;
+        this.visible = this.blinkTimer < 5;
+        
+        if (this.invincibleTimer <= 0) {
+            this.invincible = false;
+            this.visible = true;
+        }
+    }
+
     // eat something
     if (map) {
         var t = map.getTile(this.tile.x, this.tile.y);
@@ -219,4 +242,19 @@ Player.prototype.update = function(j) {
                 energizer.activate();
         }
     }
+};
+
+Player.prototype.usePotion = function() {
+    if (this.potionCount > 0 && !this.invincible) {
+        this.potionCount--;
+        this.invincible = true;
+        this.invincibleTimer = this.invincibleDuration;
+        this.blinkTimer = 0;
+        return true;
+    }
+    return false;
+};
+
+Player.prototype.addPotion = function() {
+    this.potionCount++;
 };
