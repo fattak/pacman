@@ -131,30 +131,53 @@ var quiz = (function() {
 
         // Start countdown
         let timeLeft = 15;
-        const countdown = setInterval(() => {
-            timeLeft--;
-            timer.textContent = timeLeft;
-            
-            // Update progress bar
-            const progress = (timeLeft / 15) * 100;
-            progressBar.style.width = `${progress}%`;
-            
-            if (timeLeft <= 5) {
-                timer.style.color = '#f44336';
-                progressBar.style.background = '#f44336';
-            }
-            
-            if (timeLeft <= 0) {
-                clearInterval(countdown);
+        let countdownInterval;
+        const startCountdown = () => {
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                timer.textContent = timeLeft;
+                
+                // Update progress bar
+                const progress = (timeLeft / 15) * 100;
+                progressBar.style.width = `${progress}%`;
+                
+                if (timeLeft <= 5) {
+                    timer.style.color = '#f44336';
+                    progressBar.style.background = '#f44336';
+                }
+                
+                if (timeLeft <= 0) {
+                    cleanup();
+                    clearInterval(countdownInterval);
+                    modal.remove();
+                    showResult(false, quiz.correctAnswer, callback);
+                }
+            }, 1000);
+        };
+
+        // Add keyboard number support
+        const handleKeyPress = (e) => {
+            const num = parseInt(e.key);
+            if (num >= 1 && num <= 4) {  // Check if pressed key is 1-4
+                cleanup();
+                clearInterval(countdownInterval);
                 modal.remove();
-                showResult(false, quiz.correctAnswer, callback);
+                const index = num - 1;
+                const isCorrect = index === quiz.correctIndex;
+                showResult(isCorrect, quiz.correctAnswer, callback);
             }
-        }, 1000);
+        };
+        document.addEventListener('keypress', handleKeyPress);
+
+        // Clean up event listener when quiz ends
+        const cleanup = () => {
+            document.removeEventListener('keypress', handleKeyPress);
+        };
 
         // Add choice buttons
         quiz.choices.forEach((choice, index) => {
             const button = document.createElement('button');
-            button.textContent = choice;
+            button.textContent = `(${index + 1}) ${choice}`;  // Add number prefix
             button.style.cssText = `
                 display: block;
                 width: ${mobile ? '280px' : '200px'};
@@ -174,16 +197,15 @@ var quiz = (function() {
             const handleClick = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                cleanup();
+                clearInterval(countdownInterval);
                 modal.remove();
                 const isCorrect = index === quiz.correctIndex;
                 showResult(isCorrect, quiz.correctAnswer, callback);
             };
 
             // Add both click and touch events
-            button.onclick = (e) => {
-                clearInterval(countdown);
-                handleClick(e);
-            };
+            button.onclick = handleClick;
             button.ontouchstart = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -195,7 +217,6 @@ var quiz = (function() {
                 e.stopPropagation();
                 button.style.background = '#000';
                 button.style.color = '#FFB8AE';
-                clearInterval(countdown);
                 handleClick(e);
             };
             button.ontouchcancel = (e) => {
@@ -205,22 +226,11 @@ var quiz = (function() {
                 button.style.color = '#FFB8AE';
             };
 
-            // Mouse events for non-touch devices
-            if (!mobile) {
-                button.onmouseover = () => {
-                    button.style.background = '#FFB8AE';
-                    button.style.color = '#000';
-                };
-                button.onmouseout = () => {
-                    button.style.background = '#000';
-                    button.style.color = '#FFB8AE';
-                };
-            }
-
             modal.appendChild(button);
         });
 
         document.body.appendChild(modal);
+        startCountdown();  // Start the countdown after everything is set up
     }
 
     // Show the result message
