@@ -67,13 +67,15 @@ var quiz = (function() {
             left: 50%;
             transform: translate(-50%, -50%);
             background: rgba(0, 0, 0, 0.9);
-            padding: ${mobile ? '40px' : '20px'};
+            padding: ${mobile ? (window.innerHeight > window.innerWidth ? '40px' : '20px') : '20px'};
             border-radius: 10px;
             border: 2px solid #FFB8AE;
             color: white;
             font-family: "Press Start 2P", monospace;
             text-align: center;
             z-index: 1000;
+            max-height: ${window.innerHeight > window.innerWidth ? '90vh' : '80vh'};
+            overflow-y: auto;
             -webkit-tap-highlight-color: transparent;
         `;
 
@@ -81,8 +83,8 @@ var quiz = (function() {
         const question = document.createElement('div');
         question.textContent = quiz.question;
         question.style.cssText = `
-            font-size: ${mobile ? '32px' : '24px'};
-            margin-bottom: ${mobile ? '40px' : '20px'};
+            font-size: ${mobile ? (window.innerHeight > window.innerWidth ? '32px' : '24px') : '24px'};
+            margin-bottom: ${mobile ? (window.innerHeight > window.innerWidth ? '40px' : '20px') : '20px'};
             color: #FFB8AE;
             line-height: 1.4;
         `;
@@ -210,14 +212,14 @@ var quiz = (function() {
             
             button.style.cssText = `
                 display: block;
-                width: ${mobile ? '280px' : '200px'};
-                margin: ${mobile ? '20px' : '10px'} auto;
-                padding: ${mobile ? '20px' : '10px'};
+                width: ${mobile ? (window.innerHeight > window.innerWidth ? '280px' : '240px') : '200px'};
+                margin: ${mobile ? (window.innerHeight > window.innerWidth ? '20px' : '10px') : '10px'} auto;
+                padding: ${mobile ? (window.innerHeight > window.innerWidth ? '20px' : '12px') : '10px'};
                 background: #000;
                 border: 2px solid #FFB8AE;
                 color: #FFB8AE;
                 font-family: "Press Start 2P", monospace;
-                font-size: ${mobile ? '24px' : '16px'};
+                font-size: ${mobile ? (window.innerHeight > window.innerWidth ? '24px' : '18px') : '16px'};
                 cursor: pointer;
                 -webkit-tap-highlight-color: transparent;
                 user-select: none;
