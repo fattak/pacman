@@ -11217,8 +11217,42 @@ var overState = (function() {
 // Input
 // (Handles all key presses and touches)
 
-(function(){
+// Create a namespace for shared functions
+var inputManager = {
+    isPlayState: function() { 
+        // Check if vcr is defined first
+        if (typeof vcr === 'undefined') {
+            return state == learnState || 
+                state == newGameState || 
+                state == playState || 
+                state == readyNewState || 
+                state == readyRestartState;
+        }
+        return !vcr.isSeeking() && (
+            state == learnState || 
+            state == newGameState || 
+            state == playState || 
+            state == readyNewState || 
+            state == readyRestartState
+        ); 
+    },
+    // Add scroll control functions to the namespace
+    disableScroll: function() {
+        document.body.style.overflow = 'hidden';
+        document.body.style.touchAction = 'none';
+        document.addEventListener('touchmove', function(e) {
+            if (inputManager.isPlayState()) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    },
+    enableScroll: function() {
+        document.body.style.overflow = '';
+        document.body.style.touchAction = '';
+    }
+};
 
+(function(){
     // A Key Listener class (each key maps to an array of callbacks)
     var KeyEventListener = function() {
         this.listeners = {};
@@ -11277,7 +11311,6 @@ var overState = (function() {
         keyStates[key] = false;
         keyUpListeners.exec(key, e);
     });
-
 
     // key enumerations
 
@@ -11343,19 +11376,17 @@ var overState = (function() {
     addKeyDown(KEY_ESC, function() { inGameMenu.getMenuButton().onclick(); return true; }, isInGameMenuButtonClickable);
 
     // Move Pac-Man
-    var isPlayState = function() { return !vcr.isSeeking() && (state == learnState || state == newGameState || state == playState || state == readyNewState || state == readyRestartState); };
-    addKeyDown(KEY_LEFT,  function() { pacman.setInputDir(DIR_LEFT); },  isPlayState);
-    addKeyDown(KEY_RIGHT, function() { pacman.setInputDir(DIR_RIGHT); }, isPlayState);
-    addKeyDown(KEY_UP,    function() { pacman.setInputDir(DIR_UP); },    isPlayState);
-    addKeyDown(KEY_DOWN,  function() { pacman.setInputDir(DIR_DOWN); },  isPlayState);
-    addKeyUp  (KEY_LEFT,  function() { pacman.clearInputDir(DIR_LEFT); },  isPlayState);
-    addKeyUp  (KEY_RIGHT, function() { pacman.clearInputDir(DIR_RIGHT); }, isPlayState);
-    addKeyUp  (KEY_UP,    function() { pacman.clearInputDir(DIR_UP); },    isPlayState);
-    addKeyUp  (KEY_DOWN,  function() { pacman.clearInputDir(DIR_DOWN); },  isPlayState);
+    addKeyDown(KEY_LEFT,  function() { pacman.setInputDir(DIR_LEFT); },  inputManager.isPlayState);
+    addKeyDown(KEY_RIGHT, function() { pacman.setInputDir(DIR_RIGHT); }, inputManager.isPlayState);
+    addKeyDown(KEY_UP,    function() { pacman.setInputDir(DIR_UP); },    inputManager.isPlayState);
+    addKeyDown(KEY_DOWN,  function() { pacman.setInputDir(DIR_DOWN); },  inputManager.isPlayState);
+    addKeyUp  (KEY_LEFT,  function() { pacman.clearInputDir(DIR_LEFT); },  inputManager.isPlayState);
+    addKeyUp  (KEY_RIGHT, function() { pacman.clearInputDir(DIR_RIGHT); }, inputManager.isPlayState);
+    addKeyUp  (KEY_UP,    function() { pacman.clearInputDir(DIR_UP); },    inputManager.isPlayState);
+    addKeyUp  (KEY_DOWN,  function() { pacman.clearInputDir(DIR_DOWN); },  inputManager.isPlayState);
 
     // Slow-Motion
-    var isPracticeMode = function() { return isPlayState() && practiceMode; };
-    //isPracticeMode = function() { return true; };
+    var isPracticeMode = function() { return inputManager.isPlayState() && practiceMode; };
     addKeyDown(KEY_1, function() { executive.setUpdatesPerSecond(30); }, isPracticeMode);
     addKeyDown(KEY_2,  function() { executive.setUpdatesPerSecond(15); }, isPracticeMode);
     addKeyUp  (KEY_1, function() { executive.setUpdatesPerSecond(60); }, isPracticeMode);
@@ -11387,7 +11418,7 @@ var overState = (function() {
 
     // Draw Actor Targets (fishpoles)
     addKeyDown(KEY_Q, function() { 
-        if (isPlayState()) {
+        if (inputManager.isPlayState()) {
             pacman.usePotion();
         }
         else if (isPracticeMode()) {
@@ -11414,109 +11445,82 @@ var overState = (function() {
     addKeyDown(KEY_P, function() { pacman.ai = !pacman.ai; }, isPracticeMode);
 
     addKeyDown(KEY_END, function() { executive.togglePause(); });
-
 })();
 
 var initSwipe = function() {
+    // Track touch start position
+    var touchStartX = null;
+    var touchStartY = null;
+    var minSwipeDistance = 30; // Minimum distance for a swipe
 
-    // position of anchor
-    var x = 0;
-    var y = 0;
-
-    // current distance from anchor
-    var dx = 0;
-    var dy = 0;
-
-    // minimum distance from anchor before direction is registered
-    var r = 4;
-    
-    // double tap detection
-    var lastTapTime = 0;
-    var doubleTapDelay = 300; // milliseconds
-    var lastTapX = 0;
-    var lastTapY = 0;
-    var doubleTapRadius = 30; // pixels
-    
-    var touchStart = function(event) {
-        event.preventDefault();
-        var fingerCount = event.touches.length;
-        if (fingerCount == 1) {
-            // commit new anchor
-            x = event.touches[0].pageX;
-            y = event.touches[0].pageY;
-        }
-        else {
-            touchCancel(event);
-        }
+    var handleStart = function(e) {
+        if (!inputManager.isPlayState()) return;
+        
+        var touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        
+        // Disable scrolling when touch starts in play state
+        inputManager.disableScroll();
     };
 
-    var touchEnd = function(event) {
-        event.preventDefault();
+    var handleMove = function(e) {
+        if (!inputManager.isPlayState() || touchStartX === null || touchStartY === null) return;
+
+        var touch = e.touches[0];
+        var deltaX = touch.clientX - touchStartX;
+        var deltaY = touch.clientY - touchStartY;
         
-        // check for double tap
-        var currentTime = new Date().getTime();
-        var timeDiff = currentTime - lastTapTime;
-        var distance = Math.sqrt(Math.pow(x - lastTapX, 2) + Math.pow(y - lastTapY, 2));
-        
-        if (timeDiff < doubleTapDelay && distance < doubleTapRadius) {
-            // Double tap detected
-            if (isPlayState()) {
-                pacman.usePotion();
-            }
-        }
-        
-        lastTapTime = currentTime;
-        lastTapX = x;
-        lastTapY = y;
-    };
-
-    var touchMove = function(event) {
-        event.preventDefault();
-        var fingerCount = event.touches.length;
-        if (fingerCount == 1) {
-
-            // get current distance from anchor
-            dx = event.touches[0].pageX - x;
-            dy = event.touches[0].pageY - y;
-
-            // if minimum move distance is reached
-            if (dx*dx+dy*dy >= r*r) {
-
-                // commit new anchor
-                x += dx;
-                y += dy;
-
-                // register direction
-                if (Math.abs(dx) >= Math.abs(dy)) {
-                    pacman.setInputDir(dx>0 ? DIR_RIGHT : DIR_LEFT);
+        // Determine swipe direction based on the largest delta
+        if (Math.abs(deltaX) > minSwipeDistance || Math.abs(deltaY) > minSwipeDistance) {
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                // Horizontal swipe
+                if (deltaX > 0) {
+                    pacman.setInputDir(DIR_RIGHT);
+                } else {
+                    pacman.setInputDir(DIR_LEFT);
                 }
-                else {
-                    pacman.setInputDir(dy>0 ? DIR_DOWN : DIR_UP);
+            } else {
+                // Vertical swipe
+                if (deltaY > 0) {
+                    pacman.setInputDir(DIR_DOWN);
+                } else {
+                    pacman.setInputDir(DIR_UP);
                 }
             }
+            // Reset touch start to allow for continuous motion
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
         }
-        else {
-            touchCancel(event);
+        
+        // Prevent default behavior to avoid scrolling
+        e.preventDefault();
+    };
+
+    var handleEnd = function() {
+        // Reset touch tracking
+        touchStartX = null;
+        touchStartY = null;
+        
+        // Re-enable scrolling when not in play state
+        if (!inputManager.isPlayState()) {
+            inputManager.enableScroll();
         }
     };
 
-    var touchCancel = function(event) {
-        event.preventDefault();
-        x=y=dx=dy=0;
-    };
+    // Add touch event listeners
+    document.addEventListener('touchstart', handleStart, { passive: false });
+    document.addEventListener('touchmove', handleMove, { passive: false });
+    document.addEventListener('touchend', handleEnd, { passive: true });
+    document.addEventListener('touchcancel', handleEnd, { passive: true });
 
-    var touchTap = function(event) {
-        // tap to clear input directions
-        pacman.clearInputDir(undefined);
-    };
-    
-    // register touch events
-    document.onclick = touchTap;
-    document.ontouchstart = touchStart;
-    document.ontouchend = touchEnd;
-    document.ontouchmove = touchMove;
-    document.ontouchcancel = touchCancel;
+    // Initialize scroll control
+    if (inputManager.isPlayState()) {
+        inputManager.disableScroll();
+    }
 };
+
+initSwipe();
 //@line 1 "src/cutscenes.js"
 ////////////////////////////////////////////////
 // Cutscenes
