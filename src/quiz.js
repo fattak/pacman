@@ -336,11 +336,44 @@ var quiz = (function() {
         document.body.appendChild(resultModal);
     }
 
-    return {
-        // Main function to start a quiz
-        prompt: function(callback) {
-            const quizData = generateQuiz();
-            showQuizModal(quizData, callback);
+    // Check if Moti4Learn Quiz API is available
+    function isMoti4LearnQuizApiAvailable() {
+        try {
+            return window.parent && window.parent.quizApi && typeof window.parent.quizApi.takeQuiz === 'function';
+        } catch (e) {
+            // If we can't access window.parent, we're not in the Moti4Learn iframe
+            return false;
         }
+    }
+
+    // Main function to start a quiz
+    async function prompt(callback) {
+        // Try to use Moti4Learn Quiz API first
+        if (isMoti4LearnQuizApiAvailable()) {
+            try {
+                const result = await window.parent.quizApi.takeQuiz();
+                
+                // Convert Moti4Learn result to legacy format
+                if (result.attempt) {
+                    callback(result.isCorrect);
+                    // callback(true); // for easy testing, making it always correct
+                } else {
+                    // If no attempt was made (timeout or closed), treat as incorrect
+                    callback(false);
+                }
+                return;  // Exit here after handling Moti4Learn quiz
+            } catch (error) {
+                console.warn('Failed to use Moti4Learn Quiz API, falling back to legacy quiz:', error);
+                // Fall through to legacy quiz implementation
+            }
+        }
+
+        // Legacy quiz implementation - only runs if Moti4Learn is not available or fails
+        const quizData = generateQuiz();
+        showQuizModal(quizData, callback);
+    }
+
+    return {
+        prompt
     };
 })();

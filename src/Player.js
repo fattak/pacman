@@ -1,6 +1,10 @@
 //////////////////////////////////////////////////////////////////////////////////////
 // Player is the controllable character (Pac-Man)
 
+// Constants for invincibility durations (in frames at 60fps)
+const INVINCIBLE_DURATION_CORRECT = 360;   // 6 seconds
+const INVINCIBLE_DURATION_WRONG = 120;     // 2 seconds
+
 // Player constructor
 var Player = function() {
 
@@ -16,7 +20,7 @@ var Player = function() {
     this.potionCount = 0;
     this.invincible = false;
     this.invincibleTimer = 0;
-    this.invincibleDuration = 300; // 5 seconds at 60fps
+    this.invincibleDuration = INVINCIBLE_DURATION_WRONG; // Base duration is 2 seconds
     this.blinkTimer = 0;
     this.visible = true;
     this.quizActive = false;  // Track if a quiz is in progress
@@ -259,8 +263,9 @@ Player.prototype.usePotion = function() {
         quiz.prompt((isCorrect) => {
             this.quizActive = false;
             this.invincible = true;
-            // Double duration if answered correctly
-            this.invincibleTimer = isCorrect ? this.invincibleDuration * 2 : this.invincibleDuration;
+            // Set duration based on quiz answer
+            this.invincibleTimer = isCorrect ? INVINCIBLE_DURATION_CORRECT : INVINCIBLE_DURATION_WRONG;
+            this.invincibleDuration = this.invincibleTimer;
             this.blinkTimer = 0;
             
             // Resume game

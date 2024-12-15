@@ -1298,9 +1298,11 @@ var playState = {
         renderer.endMapClip();
 
         // Draw "Time x2" message if needed
-        if (energizer.isShowingTimeX2()) {
-            renderer.drawMessage("TIME x2", "#FFF", 11, 20);
-        }
+        // if (energizer.isShowingTimeX2()) {
+        //     renderer.flashMessage("Time x2!", 5000, "#FF0", 10, 20, 400); // Shows "POWER UP!" for 2 seconds in yellow
+        // }
+
+        renderer.drawFlashMessage();
     },
 
     // handles collision between pac-man and ghosts

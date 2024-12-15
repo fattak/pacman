@@ -161,6 +161,15 @@ var initRenderer = function(){
         this.pelletColor = "#888";
 
         this.flashLevel = false;
+
+        // Flash message properties
+        this.flashMessageText = null;
+        this.flashMessageDuration = 0;
+        this.flashMessageStartTime = 0;
+        this.flashMessageColor = "#FFF";  // Default color
+        this.flashMessageX = mapWidth/2;  // Default x position (center)
+        this.flashMessageY = mapHeight/2; // Default y position (center)
+        this.flashMessageSpeed = 500;     // Default fade speed in milliseconds
     };
 
     CommonRenderer.prototype = {
@@ -466,6 +475,54 @@ var initRenderer = function(){
             }
         },
 
+        // Flash a message for a specified duration (in milliseconds)
+        // beware don't call this every frame
+        flashMessage: function(text, duration, color, x, y, speed) {
+            this.flashMessageText = text;
+            this.flashMessageDuration = duration;
+            this.flashMessageStartTime = Date.now();
+            this.flashMessageColor = color || "#FFF";
+            this.flashMessageX = x !== undefined ? x : mapWidth/2;
+            this.flashMessageY = y !== undefined ? y : mapHeight/2;
+            this.flashMessageSpeed = speed || 500;
+        },
+
+        // Draw flash message if active
+        drawFlashMessage: function() {
+            if (this.flashMessageText) {
+                var elapsed = Date.now() - this.flashMessageStartTime;
+                if (elapsed < this.flashMessageDuration) {
+                    // Calculate number of complete fade cycles
+                    var cycleTime = this.flashMessageSpeed * 2; // Time for one complete fade in + fade out
+                    var cycleElapsed = elapsed % cycleTime;
+                    
+                    // Calculate alpha based on position in current cycle
+                    var alpha = cycleElapsed <= this.flashMessageSpeed ? 
+                        cycleElapsed / this.flashMessageSpeed : // Fade in
+                        1 - ((cycleElapsed - this.flashMessageSpeed) / this.flashMessageSpeed); // Fade out
+                    
+                    ctx.save();
+                    ctx.font = tileSize + "px ArcadeR";
+                    // Handle both hex and rgb color formats
+                    var color = this.flashMessageColor || "#FFF";
+                    if (color.startsWith("#")) {
+                        ctx.fillStyle = "rgba(255,255,255," + alpha + ")";
+                    } else if (color.startsWith("rgb")) {
+                        ctx.fillStyle = color.replace("rgb", "rgba").replace(")", "," + alpha + ")");
+                    } else {
+                        ctx.fillStyle = "rgba(255,255,255," + alpha + ")";
+                    }
+                    ctx.textAlign = "right";
+                    ctx.textBaseline = "top";
+            
+                    var tempX = this.flashMessageX + this.flashMessageText.length;
+                    ctx.fillText(this.flashMessageText, tempX*tileSize, this.flashMessageY*tileSize);
+                    ctx.restore();
+                } else {
+                    this.flashMessageText = null;
+                }
+            }
+        },
     };
 
     //////////////////////////////////////////////////////////////
@@ -908,10 +965,10 @@ var initRenderer = function(){
                 ctx.fillText(highScore, 17*tileSize, y);
             }
 
-            // draw potion count
+            // draw POW count
             ctx.textAlign = "right";
             ctx.fillStyle = "#FFF";
-            ctx.fillText("POTION", 27*tileSize, 0);
+            ctx.fillText("POW", 27*tileSize, 0);
             ctx.fillText(pacman.potionCount, 27*tileSize, y);
         },
 
@@ -1093,10 +1150,10 @@ var initRenderer = function(){
                 ctx.fillText(highScore, 17*tileSize, y);
             }
 
-            // draw potion count
+            // draw POW count
             ctx.textAlign = "right";
             ctx.fillStyle = "#FFF";
-            ctx.fillText("POTION", 27*tileSize, 0);
+            ctx.fillText("POW", 27*tileSize, 0);
             ctx.fillText(pacman.potionCount, 27*tileSize, y);
         },
 

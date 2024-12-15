@@ -28,8 +28,7 @@ var inGameMenu = (function() {
     // Draw invincibility progress bar
     var drawInvincibleProgress = function(ctx) {
         // Calculate progress based on current timer and max duration
-        var maxDuration = pacman.invincibleTimer > pacman.invincibleDuration ? 
-            pacman.invincibleDuration * 2 : pacman.invincibleDuration;
+        var maxDuration = pacman.invincibleDuration;
         var progressWidth = (pacman.invincibleTimer / maxDuration) * (w+2*tileSize);
         
         // Draw background
@@ -37,7 +36,7 @@ var inGameMenu = (function() {
         ctx.fillRect(mapWidth/2 + w/2 + tileSize, mapHeight, w+2*tileSize, h);
         
         // Draw progress
-        ctx.fillStyle = pacman.invincibleTimer > pacman.invincibleDuration ? "#FFA500" : "#FFD700"; // Orange for bonus time
+        ctx.fillStyle = pacman.invincibleTimer > INVINCIBLE_DURATION_WRONG ? "#FFA500" : "#FFD700"; // Orange for bonus time
         ctx.fillRect(mapWidth/2 + w/2 + tileSize, mapHeight, progressWidth, h);
         
         // Draw time text

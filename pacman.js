@@ -3137,6 +3137,15 @@ var initRenderer = function(){
         this.pelletColor = "#888";
 
         this.flashLevel = false;
+
+        // Flash message properties
+        this.flashMessageText = null;
+        this.flashMessageDuration = 0;
+        this.flashMessageStartTime = 0;
+        this.flashMessageColor = "#FFF";  // Default color
+        this.flashMessageX = mapWidth/2;  // Default x position (center)
+        this.flashMessageY = mapHeight/2; // Default y position (center)
+        this.flashMessageSpeed = 500;     // Default fade speed in milliseconds
     };
 
     CommonRenderer.prototype = {
@@ -3442,6 +3451,54 @@ var initRenderer = function(){
             }
         },
 
+        // Flash a message for a specified duration (in milliseconds)
+        // beware don't call this every frame
+        flashMessage: function(text, duration, color, x, y, speed) {
+            this.flashMessageText = text;
+            this.flashMessageDuration = duration;
+            this.flashMessageStartTime = Date.now();
+            this.flashMessageColor = color || "#FFF";
+            this.flashMessageX = x !== undefined ? x : mapWidth/2;
+            this.flashMessageY = y !== undefined ? y : mapHeight/2;
+            this.flashMessageSpeed = speed || 500;
+        },
+
+        // Draw flash message if active
+        drawFlashMessage: function() {
+            if (this.flashMessageText) {
+                var elapsed = Date.now() - this.flashMessageStartTime;
+                if (elapsed < this.flashMessageDuration) {
+                    // Calculate number of complete fade cycles
+                    var cycleTime = this.flashMessageSpeed * 2; // Time for one complete fade in + fade out
+                    var cycleElapsed = elapsed % cycleTime;
+                    
+                    // Calculate alpha based on position in current cycle
+                    var alpha = cycleElapsed <= this.flashMessageSpeed ? 
+                        cycleElapsed / this.flashMessageSpeed : // Fade in
+                        1 - ((cycleElapsed - this.flashMessageSpeed) / this.flashMessageSpeed); // Fade out
+                    
+                    ctx.save();
+                    ctx.font = tileSize + "px ArcadeR";
+                    // Handle both hex and rgb color formats
+                    var color = this.flashMessageColor || "#FFF";
+                    if (color.startsWith("#")) {
+                        ctx.fillStyle = "rgba(255,255,255," + alpha + ")";
+                    } else if (color.startsWith("rgb")) {
+                        ctx.fillStyle = color.replace("rgb", "rgba").replace(")", "," + alpha + ")");
+                    } else {
+                        ctx.fillStyle = "rgba(255,255,255," + alpha + ")";
+                    }
+                    ctx.textAlign = "right";
+                    ctx.textBaseline = "top";
+            
+                    var tempX = this.flashMessageX + this.flashMessageText.length;
+                    ctx.fillText(this.flashMessageText, tempX*tileSize, this.flashMessageY*tileSize);
+                    ctx.restore();
+                } else {
+                    this.flashMessageText = null;
+                }
+            }
+        },
     };
 
     //////////////////////////////////////////////////////////////
@@ -3884,10 +3941,10 @@ var initRenderer = function(){
                 ctx.fillText(highScore, 17*tileSize, y);
             }
 
-            // draw potion count
+            // draw POW count
             ctx.textAlign = "right";
             ctx.fillStyle = "#FFF";
-            ctx.fillText("POTION", 27*tileSize, 0);
+            ctx.fillText("POW", 27*tileSize, 0);
             ctx.fillText(pacman.potionCount, 27*tileSize, y);
         },
 
@@ -4069,10 +4126,10 @@ var initRenderer = function(){
                 ctx.fillText(highScore, 17*tileSize, y);
             }
 
-            // draw potion count
+            // draw POW count
             ctx.textAlign = "right";
             ctx.fillStyle = "#FFF";
-            ctx.fillText("POTION", 27*tileSize, 0);
+            ctx.fillText("POW", 27*tileSize, 0);
             ctx.fillText(pacman.potionCount, 27*tileSize, y);
         },
 
@@ -4645,8 +4702,7 @@ var inGameMenu = (function() {
     // Draw invincibility progress bar
     var drawInvincibleProgress = function(ctx) {
         // Calculate progress based on current timer and max duration
-        var maxDuration = pacman.invincibleTimer > pacman.invincibleDuration ? 
-            pacman.invincibleDuration * 2 : pacman.invincibleDuration;
+        var maxDuration = pacman.invincibleDuration;
         var progressWidth = (pacman.invincibleTimer / maxDuration) * (w+2*tileSize);
         
         // Draw background
@@ -4654,7 +4710,7 @@ var inGameMenu = (function() {
         ctx.fillRect(mapWidth/2 + w/2 + tileSize, mapHeight, w+2*tileSize, h);
         
         // Draw progress
-        ctx.fillStyle = pacman.invincibleTimer > pacman.invincibleDuration ? "#FFA500" : "#FFD700"; // Orange for bonus time
+        ctx.fillStyle = pacman.invincibleTimer > INVINCIBLE_DURATION_WRONG ? "#FFA500" : "#FFD700"; // Orange for bonus time
         ctx.fillRect(mapWidth/2 + w/2 + tileSize, mapHeight, progressWidth, h);
         
         // Draw time text
@@ -8025,6 +8081,10 @@ Ghost.prototype.setTarget = function() {
 //////////////////////////////////////////////////////////////////////////////////////
 // Player is the controllable character (Pac-Man)
 
+// Constants for invincibility durations (in frames at 60fps)
+const INVINCIBLE_DURATION_CORRECT = 360;   // 6 seconds
+const INVINCIBLE_DURATION_WRONG = 120;     // 2 seconds
+
 // Player constructor
 var Player = function() {
 
@@ -8040,7 +8100,7 @@ var Player = function() {
     this.potionCount = 0;
     this.invincible = false;
     this.invincibleTimer = 0;
-    this.invincibleDuration = 300; // 5 seconds at 60fps
+    this.invincibleDuration = INVINCIBLE_DURATION_WRONG; // Base duration is 2 seconds
     this.blinkTimer = 0;
     this.visible = true;
     this.quizActive = false;  // Track if a quiz is in progress
@@ -8283,8 +8343,9 @@ Player.prototype.usePotion = function() {
         quiz.prompt((isCorrect) => {
             this.quizActive = false;
             this.invincible = true;
-            // Double duration if answered correctly
-            this.invincibleTimer = isCorrect ? this.invincibleDuration * 2 : this.invincibleDuration;
+            // Set duration based on quiz answer
+            this.invincibleTimer = isCorrect ? INVINCIBLE_DURATION_CORRECT : INVINCIBLE_DURATION_WRONG;
+            this.invincibleDuration = this.invincibleTimer;
             this.blinkTimer = 0;
             
             // Resume game
@@ -8938,8 +8999,6 @@ var energizer = (function() {
     // how many seconds to display points when ghost is eaten
     var pointsDuration = 1;
 
-    // Store the original duration for doubling
-    var originalDuration = 0;
     var isDurationDoubled = false;
 
     // how long to stay energized based on current level
@@ -8947,7 +9006,7 @@ var energizer = (function() {
         var seconds = [6,5,4,3,2,5,2,2,1,5,2,1,1,3,1,1,0,1];
         return function() {
             var i = level;
-            if (i > 18) return 0;
+            if (i > 18) return isDurationDoubled ? 60 : 0;   // at least 1 second (60 frames) if duration doubled
             var duration = 60 * seconds[i-1];
             return isDurationDoubled ? duration * 2 : duration;
         };
@@ -9034,17 +9093,6 @@ var energizer = (function() {
                     
                     // Start "Time x2" message timer
                     timeX2MessageFrames = timeX2MessageDuration;
-                    
-                    // Spawn a fruit
-                    if (fruit) {
-                        if (typeof fruit.spawn === 'function') {
-                            fruit.spawn();
-                        } else if (typeof fruit.start === 'function') {
-                            fruit.start();
-                        } else if (typeof fruit.reset === 'function') {
-                            fruit.reset();
-                        }
-                    }
                 }
                 
                 // Activate energizer
@@ -9054,8 +9102,18 @@ var energizer = (function() {
                 for (var i=0; i<4; i++) {
                     ghosts[i].onEnergized();
                 }
-                if (getDuration() == 0) { // if no duration, then immediately reset
+                var duration = getDuration();
+                if (duration == 0) { // if no duration, then immediately reset
                     this.reset();
+                }
+
+                if (correct) {
+                    var flashDur = duration / 60 * 1000;
+                    if (flashDur > 4000) flashDur = 4000;
+                    if (flashDur < 2000) flashDur = 2000;
+                    var msg = "Time x2!";
+                    // var msg = "Time x2 (" + duration + "s)";
+                    renderer.flashMessage(msg, flashDur, "#FF0", 10, 20, 400); // Shows "Time x2!" for 2 seconds in yellow                    
                 }
                 
                 // Resume game
@@ -10876,9 +10934,11 @@ var playState = {
         renderer.endMapClip();
 
         // Draw "Time x2" message if needed
-        if (energizer.isShowingTimeX2()) {
-            renderer.drawMessage("TIME x2", "#FFF", 11, 20);
-        }
+        // if (energizer.isShowingTimeX2()) {
+        //     renderer.flashMessage("Time x2!", 5000, "#FF0", 10, 20, 400); // Shows "POWER UP!" for 2 seconds in yellow
+        // }
+
+        renderer.drawFlashMessage();
     },
 
     // handles collision between pac-man and ghosts

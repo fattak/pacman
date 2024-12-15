@@ -9,8 +9,6 @@ var energizer = (function() {
     // how many seconds to display points when ghost is eaten
     var pointsDuration = 1;
 
-    // Store the original duration for doubling
-    var originalDuration = 0;
     var isDurationDoubled = false;
 
     // how long to stay energized based on current level
@@ -18,7 +16,7 @@ var energizer = (function() {
         var seconds = [6,5,4,3,2,5,2,2,1,5,2,1,1,3,1,1,0,1];
         return function() {
             var i = level;
-            if (i > 18) return 0;
+            if (i > 18) return isDurationDoubled ? 60 : 0;   // at least 1 second (60 frames) if duration doubled
             var duration = 60 * seconds[i-1];
             return isDurationDoubled ? duration * 2 : duration;
         };
@@ -105,17 +103,6 @@ var energizer = (function() {
                     
                     // Start "Time x2" message timer
                     timeX2MessageFrames = timeX2MessageDuration;
-                    
-                    // Spawn a fruit
-                    if (fruit) {
-                        if (typeof fruit.spawn === 'function') {
-                            fruit.spawn();
-                        } else if (typeof fruit.start === 'function') {
-                            fruit.start();
-                        } else if (typeof fruit.reset === 'function') {
-                            fruit.reset();
-                        }
-                    }
                 }
                 
                 // Activate energizer
@@ -125,8 +112,18 @@ var energizer = (function() {
                 for (var i=0; i<4; i++) {
                     ghosts[i].onEnergized();
                 }
-                if (getDuration() == 0) { // if no duration, then immediately reset
+                var duration = getDuration();
+                if (duration == 0) { // if no duration, then immediately reset
                     this.reset();
+                }
+
+                if (correct) {
+                    var flashDur = duration / 60 * 1000;
+                    if (flashDur > 4000) flashDur = 4000;
+                    if (flashDur < 2000) flashDur = 2000;
+                    var msg = "Time x2!";
+                    // var msg = "Time x2 (" + duration + "s)";
+                    renderer.flashMessage(msg, flashDur, "#FF0", 10, 20, 400); // Shows "Time x2!" for 2 seconds in yellow                    
                 }
                 
                 // Resume game
