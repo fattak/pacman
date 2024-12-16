@@ -19,10 +19,10 @@ var inGameMenu = (function() {
     // POW button for potion activation (wider for longer text)
     var powBtn = new Button(mapWidth/2 + w/2 + tileSize,mapHeight,w+2*tileSize,h, function() {
         if (pacman.potionCount > 0) {
-            pacman.usePotion();
+            potionConfirmMenu.enable();
         }
     });
-    powBtn.setText("(Q)POW");
+    powBtn.setText("(Z)POW");
     powBtn.setFont(tileSize+"px ArcadeR","#FFF");
 
     // Draw invincibility progress bar
@@ -162,7 +162,18 @@ var inGameMenu = (function() {
     });
     cheatsMenu.backButton = cheatsMenu.buttons[cheatsMenu.buttons.length-1];
 
-    var menus = [menu, practiceMenu, confirmMenu, cheatsMenu];
+    // potion confirmation menu
+    var potionConfirmMenu = new Menu("USE POTION?",2*tileSize,5*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
+    potionConfirmMenu.addTextButton("INVINCIBLE POW", function() {
+        potionConfirmMenu.disable();
+        pacman.usePotion();
+    });
+    potionConfirmMenu.addTextButton("CANCEL", function() {
+        potionConfirmMenu.disable();
+    });
+    potionConfirmMenu.backButton = potionConfirmMenu.buttons[1]; // Set CANCEL as back button
+
+    var menus = [menu, practiceMenu, confirmMenu, cheatsMenu, potionConfirmMenu];
     var getVisibleMenu = function() {
         var len = menus.length;
         var i;
@@ -223,6 +234,9 @@ var inGameMenu = (function() {
         },
         getMenuButton: function() {
             return btn;
+        },
+        getPowButton: function() {
+            return powBtn;
         },
     };
 })();

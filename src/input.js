@@ -120,6 +120,7 @@ var inputManager = {
     var KEY_E = 69;
     var KEY_R = 82;
     var KEY_T = 84;
+    var KEY_Z = 90;
 
     var KEY_A = 65;
     var KEY_S = 83;
@@ -201,17 +202,15 @@ var inputManager = {
     addKeyDown(KEY_N, function() { switchState(readyNewState, 60); }, canSkip);
     addKeyDown(KEY_M, function() { switchState(finishState); }, function() { return state == playState; });
 
-    // Draw Actor Targets (fishpoles)
-    addKeyDown(KEY_Q, function() { 
+    // use POW
+    addKeyDown(KEY_Z, function() { 
         if (inputManager.isPlayState()) {
-            pacman.usePotion();
+            inGameMenu.getPowButton().onclick();
         }
-        else if (isPracticeMode()) {
-            blinky.isDrawTarget = !blinky.isDrawTarget;
-        }
-    });
+    }, isInGameMenuButtonClickable);
 
-    // Draw Actor Paths
+    // Draw Actor Targets (fishpoles)
+    addKeyDown(KEY_Q, function() { blinky.isDrawTarget = !blinky.isDrawTarget; }, isPracticeMode);
     addKeyDown(KEY_W, function() { pinky.isDrawTarget = !pinky.isDrawTarget; }, isPracticeMode);
     addKeyDown(KEY_E, function() { inky.isDrawTarget = !inky.isDrawTarget; }, isPracticeMode);
     addKeyDown(KEY_R, function() { clyde.isDrawTarget = !clyde.isDrawTarget; }, isPracticeMode);

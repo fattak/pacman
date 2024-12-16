@@ -4693,10 +4693,10 @@ var inGameMenu = (function() {
     // POW button for potion activation (wider for longer text)
     var powBtn = new Button(mapWidth/2 + w/2 + tileSize,mapHeight,w+2*tileSize,h, function() {
         if (pacman.potionCount > 0) {
-            pacman.usePotion();
+            potionConfirmMenu.enable();
         }
     });
-    powBtn.setText("(Q)POW");
+    powBtn.setText("(Z)POW");
     powBtn.setFont(tileSize+"px ArcadeR","#FFF");
 
     // Draw invincibility progress bar
@@ -4836,7 +4836,18 @@ var inGameMenu = (function() {
     });
     cheatsMenu.backButton = cheatsMenu.buttons[cheatsMenu.buttons.length-1];
 
-    var menus = [menu, practiceMenu, confirmMenu, cheatsMenu];
+    // potion confirmation menu
+    var potionConfirmMenu = new Menu("USE POTION?",2*tileSize,5*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
+    potionConfirmMenu.addTextButton("INVINCIBLE POW", function() {
+        potionConfirmMenu.disable();
+        pacman.usePotion();
+    });
+    potionConfirmMenu.addTextButton("CANCEL", function() {
+        potionConfirmMenu.disable();
+    });
+    potionConfirmMenu.backButton = potionConfirmMenu.buttons[1]; // Set CANCEL as back button
+
+    var menus = [menu, practiceMenu, confirmMenu, cheatsMenu, potionConfirmMenu];
     var getVisibleMenu = function() {
         var len = menus.length;
         var i;
@@ -4897,6 +4908,9 @@ var inGameMenu = (function() {
         },
         getMenuButton: function() {
             return btn;
+        },
+        getPowButton: function() {
+            return powBtn;
         },
     };
 })();
@@ -11395,6 +11409,7 @@ var inputManager = {
     var KEY_E = 69;
     var KEY_R = 82;
     var KEY_T = 84;
+    var KEY_Z = 90;
 
     var KEY_A = 65;
     var KEY_S = 83;
@@ -11476,17 +11491,15 @@ var inputManager = {
     addKeyDown(KEY_N, function() { switchState(readyNewState, 60); }, canSkip);
     addKeyDown(KEY_M, function() { switchState(finishState); }, function() { return state == playState; });
 
-    // Draw Actor Targets (fishpoles)
-    addKeyDown(KEY_Q, function() { 
+    // use POW
+    addKeyDown(KEY_Z, function() { 
         if (inputManager.isPlayState()) {
-            pacman.usePotion();
+            inGameMenu.getPowButton().onclick();
         }
-        else if (isPracticeMode()) {
-            blinky.isDrawTarget = !blinky.isDrawTarget;
-        }
-    });
+    }, isInGameMenuButtonClickable);
 
-    // Draw Actor Paths
+    // Draw Actor Targets (fishpoles)
+    addKeyDown(KEY_Q, function() { blinky.isDrawTarget = !blinky.isDrawTarget; }, isPracticeMode);
     addKeyDown(KEY_W, function() { pinky.isDrawTarget = !pinky.isDrawTarget; }, isPracticeMode);
     addKeyDown(KEY_E, function() { inky.isDrawTarget = !inky.isDrawTarget; }, isPracticeMode);
     addKeyDown(KEY_R, function() { clyde.isDrawTarget = !clyde.isDrawTarget; }, isPracticeMode);
