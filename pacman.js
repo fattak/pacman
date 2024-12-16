@@ -11409,6 +11409,8 @@ var inputManager = {
     var KEY_E = 69;
     var KEY_R = 82;
     var KEY_T = 84;
+    var KEY_Y = 89;
+    var KEY_U = 85;
     var KEY_Z = 90;
 
     var KEY_A = 65;
@@ -11416,6 +11418,9 @@ var inputManager = {
     var KEY_D = 68;
     var KEY_F = 70;
     var KEY_G = 71;
+    var KEY_H = 72;
+    var KEY_J = 74;
+    var KEY_K = 75;
 
     var KEY_I = 73;
     var KEY_O = 79;
@@ -11439,12 +11444,15 @@ var inputManager = {
     };
     addKeyDown(KEY_ESC,   function(){ menu.backButton ? menu.backButton.onclick():0; return true; }, isInMenu);
     addKeyDown(KEY_ENTER, function(){ menu.clickCurrentOption(); }, isInMenu);
+    addKeyDown(KEY_SPACE, function(){ menu.clickCurrentOption(); }, isInMenu);
     var isMenuKeysAllowed = function() {
         var menu = isInMenu();
         return menu && !menu.noArrowKeys;
     };
     addKeyDown(KEY_UP,    function(){ menu.selectPrevOption(); }, isMenuKeysAllowed);
     addKeyDown(KEY_DOWN,  function(){ menu.selectNextOption(); }, isMenuKeysAllowed);
+    addKeyDown(KEY_W,    function(){ menu.selectPrevOption(); }, isMenuKeysAllowed);
+    addKeyDown(KEY_S,  function(){ menu.selectNextOption(); }, isMenuKeysAllowed);
     var isInGameMenuButtonClickable = function() {
         return hud.isValidState() && !inGameMenu.isOpen();
     };
@@ -11459,6 +11467,14 @@ var inputManager = {
     addKeyUp  (KEY_RIGHT, function() { pacman.clearInputDir(DIR_RIGHT); }, inputManager.isPlayState);
     addKeyUp  (KEY_UP,    function() { pacman.clearInputDir(DIR_UP); },    inputManager.isPlayState);
     addKeyUp  (KEY_DOWN,  function() { pacman.clearInputDir(DIR_DOWN); },  inputManager.isPlayState);
+    addKeyDown(KEY_A,  function() { pacman.setInputDir(DIR_LEFT); },  inputManager.isPlayState);
+    addKeyDown(KEY_D, function() { pacman.setInputDir(DIR_RIGHT); }, inputManager.isPlayState);
+    addKeyDown(KEY_W,    function() { pacman.setInputDir(DIR_UP); },    inputManager.isPlayState);
+    addKeyDown(KEY_S,  function() { pacman.setInputDir(DIR_DOWN); },  inputManager.isPlayState);
+    addKeyUp  (KEY_A,  function() { pacman.clearInputDir(DIR_LEFT); },  inputManager.isPlayState);
+    addKeyUp  (KEY_D, function() { pacman.clearInputDir(DIR_RIGHT); }, inputManager.isPlayState);
+    addKeyUp  (KEY_W,    function() { pacman.clearInputDir(DIR_UP); },    inputManager.isPlayState);
+    addKeyUp  (KEY_S,  function() { pacman.clearInputDir(DIR_DOWN); },  inputManager.isPlayState);
 
     // Slow-Motion
     var isPracticeMode = function() { return inputManager.isPlayState() && practiceMode; };
@@ -11499,21 +11515,24 @@ var inputManager = {
     }, isInGameMenuButtonClickable);
 
     // Draw Actor Targets (fishpoles)
-    addKeyDown(KEY_Q, function() { blinky.isDrawTarget = !blinky.isDrawTarget; }, isPracticeMode);
-    addKeyDown(KEY_W, function() { pinky.isDrawTarget = !pinky.isDrawTarget; }, isPracticeMode);
-    addKeyDown(KEY_E, function() { inky.isDrawTarget = !inky.isDrawTarget; }, isPracticeMode);
-    addKeyDown(KEY_R, function() { clyde.isDrawTarget = !clyde.isDrawTarget; }, isPracticeMode);
-    addKeyDown(KEY_T, function() { pacman.isDrawTarget = !pacman.isDrawTarget; }, isPracticeMode);
+    addKeyDown(KEY_E, function() { blinky.isDrawTarget = !blinky.isDrawTarget; }, isPracticeMode);
+    addKeyDown(KEY_R, function() { pinky.isDrawTarget = !pinky.isDrawTarget; }, isPracticeMode);
+    addKeyDown(KEY_T, function() { inky.isDrawTarget = !inky.isDrawTarget; }, isPracticeMode);
+    addKeyDown(KEY_Y, function() { clyde.isDrawTarget = !clyde.isDrawTarget; }, isPracticeMode);
+    addKeyDown(KEY_U, function() { pacman.isDrawTarget = !pacman.isDrawTarget; }, isPracticeMode);
 
     // Draw Actor Paths
-    addKeyDown(KEY_A, function() { blinky.isDrawPath = !blinky.isDrawPath; }, isPracticeMode);
-    addKeyDown(KEY_S, function() { pinky.isDrawPath = !pinky.isDrawPath; }, isPracticeMode);
-    addKeyDown(KEY_D, function() { inky.isDrawPath = !inky.isDrawPath; }, isPracticeMode);
-    addKeyDown(KEY_F, function() { clyde.isDrawPath = !clyde.isDrawPath; }, isPracticeMode);
-    addKeyDown(KEY_G, function() { pacman.isDrawPath = !pacman.isDrawPath; }, isPracticeMode);
+    addKeyDown(KEY_F, function() { blinky.isDrawPath = !blinky.isDrawPath; }, isPracticeMode);
+    addKeyDown(KEY_G, function() { pinky.isDrawPath = !pinky.isDrawPath; }, isPracticeMode);
+    addKeyDown(KEY_H, function() { inky.isDrawPath = !inky.isDrawPath; }, isPracticeMode);
+    addKeyDown(KEY_J, function() { clyde.isDrawPath = !clyde.isDrawPath; }, isPracticeMode);
+    addKeyDown(KEY_K, function() { pacman.isDrawPath = !pacman.isDrawPath; }, isPracticeMode);
 
     // Miscellaneous Cheats
-    addKeyDown(KEY_I, function() { pacman.invincible = !pacman.invincible; }, isPracticeMode);
+    addKeyDown(KEY_I, function() { 
+        pacman.invincible = !pacman.invincible; 
+        pacman.invincibleTimer += 3600; // add 60 seconds (3600 frames)
+    }, isPracticeMode);
     addKeyDown(KEY_O, function() { turboMode = !turboMode; }, isPracticeMode);
     addKeyDown(KEY_P, function() { pacman.ai = !pacman.ai; }, isPracticeMode);
 
